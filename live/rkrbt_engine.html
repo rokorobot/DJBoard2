@@ -862,8 +862,8 @@
                 </div>
               </div>
 
-              <!-- 4) Signal Direction / Meter Indicators (Horizon Aligned) -->
-              <div class="meter-container" style="display: flex; flex-direction: column; gap: 1.5rem; width: 90%;">
+              <!-- 4) Signal Direction / Meter Indicators (Horizon Aligned & Sector Blocked) -->
+              <div class="meter-container" style="display: flex; flex-direction: column; gap: 1.5rem; width: 88%; margin-right: 2.5rem;">
                 <div>
                   <div class="data-label" style="margin-bottom: 0.5rem;">LEFT DIRECTIONal_recon</div>
                   <div class="barcode" id="audio-visualizer-left-wrap" style="height: 70px;">
@@ -1208,6 +1208,14 @@
           if (currentEnergy > energyAvg * 1.25 && currentEnergy > 40 && (now - lastBeatTime) > beatCooldown) {
             advanceFrame();
             lastBeatTime = now;
+          }
+
+          // Sync canvas buffer to current DOM dimensions
+          if (canvasL.width !== canvasL.clientWidth * window.devicePixelRatio) {
+            canvasL.width = canvasL.clientWidth * window.devicePixelRatio;
+            canvasL.height = canvasL.clientHeight * window.devicePixelRatio;
+            canvasR.width = canvasR.clientWidth * window.devicePixelRatio;
+            canvasR.height = canvasR.clientHeight * window.devicePixelRatio;
           }
 
           drawViz(ctxL, dataFreqL, dataTimeL, canvasL.width, canvasL.height);
