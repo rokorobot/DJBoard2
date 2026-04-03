@@ -823,6 +823,7 @@
               <div class="panel-header" style="margin: 0; padding: 10px 16px; border: 1px solid rgba(168, 179, 163, 0.2); background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between;">
                 <div class="operation-title" style="margin-top:0; font-size: 0.9rem; line-height: 1.2; letter-spacing: 1px;">CORE SIGNAL CONTROL</div>
                 <div style="display: flex; gap: 0.8rem;">
+                  <button id="toggleFilterBtn" class="btn-edit" type="button" style="border-color: var(--accent-military-light); color: var(--accent-military-light); font-size: 11px;">[FILTER ON]</button>
                   <button id="toggleScrollBtn" class="btn-edit" type="button" style="border-color: var(--accent-military-light); color: var(--accent-military-light); font-size: 11px;">[SCROLL ON]</button>
                   <button id="editTrackBtn" class="btn-edit" type="button" style="border-color: var(--highlight-red); color: var(--highlight-red); background: rgba(215, 36, 33, 0.05); font-size: 11px;">[EDIT TRACK]</button>
                 </div>
@@ -1322,26 +1323,47 @@
       const bgVideo = document.getElementById("bgVideo");
 
       const toggleScrollBtn = document.getElementById("toggleScrollBtn");
+      const toggleFilterBtn = document.getElementById("toggleFilterBtn");
+      const signalFeedImg = document.getElementById("signal-feed-img");
+      
       let isScrolling = localStorage.getItem('rkrbt_scrolling') !== 'false';
+      let isFiltered = localStorage.getItem('rkrbt_vfeed_filter') === 'true';
 
-      function updateScrollState() {
+      function updateUIState() {
+        // Scroll Logic
         if (toggleScrollBtn) {
           toggleScrollBtn.textContent = isScrolling ? "[SCROLL ON]" : "[SCROLL OFF]";
         }
-        const clean = localStorage.getItem(STORAGE_KEY) || "";
+        const cleanTrack = localStorage.getItem(STORAGE_KEY) || "";
         if (trackValueBig) {
-          if (isScrolling && clean.length > 0) {
+          if (isScrolling && cleanTrack.length > 0) {
             trackValueBig.classList.add("ticker");
           } else {
             trackValueBig.classList.remove("ticker");
           }
         }
+
+        // Filter Logic
+        if (toggleFilterBtn) {
+          toggleFilterBtn.textContent = isFiltered ? "[FILTER ON]" : "[FILTER OFF]";
+          toggleFilterBtn.style.color = isFiltered ? "var(--accent-military-light)" : "var(--highlight-red)";
+          toggleFilterBtn.style.borderColor = isFiltered ? "var(--accent-military-light)" : "var(--highlight-red)";
+        }
+        const filterStr = isFiltered ? "grayscale(100%) sepia(100%) hue-rotate(90deg) brightness(0.8) contrast(1.2)" : "none";
+        if (bgVideo) bgVideo.style.filter = filterStr;
+        if (signalFeedImg) signalFeedImg.style.filter = filterStr;
       }
 
       toggleScrollBtn?.addEventListener('click', () => {
         isScrolling = !isScrolling;
         localStorage.setItem('rkrbt_scrolling', isScrolling.toString());
-        updateScrollState();
+        updateUIState();
+      });
+
+      toggleFilterBtn?.addEventListener('click', () => {
+        isFiltered = !isFiltered;
+        localStorage.setItem('rkrbt_vfeed_filter', isFiltered.toString());
+        updateUIState();
       });
 
       function setSessionData(trackText, videoFile) {
@@ -1397,7 +1419,7 @@
           bgVideo.load();
         }
         localStorage.setItem(VIDEO_KEY, vClean);
-        updateScrollState();
+        updateUIState();
       }
 
       function openModal() {
