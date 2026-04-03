@@ -1,6 +1,8 @@
 # RokoRobo Live Engine // DJBoard II
 ### [INDUSTRIAL_SIGNAL_CORE] TACTICAL MONITOR & RECON CONSOLE
 
+![Tactical Dashboard Preview](dashboard_preview.png)
+
 A high-performance, cinematic live-performance dashboard designed for real-time audio visualization, beat-synced video replay, and mission-critical status monitoring.
 
 ---
