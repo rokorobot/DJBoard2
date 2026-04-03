@@ -1,0 +1,9 @@
+{
+    "layout": "youtube",
+    "live_mode": "ACTIVE",
+    "directive": "A2",
+    "routing": "PGE",
+    "nodes_connected": 0,
+    "signal_state": "STABLE",
+    "session_version": "24:B"
+}

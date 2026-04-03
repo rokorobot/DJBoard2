@@ -1,0 +1,1569 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ROKOROBO LIVE ENGINE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;0,700&family=Space+Grotesk:wght@500;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      /* Define Deep green-black matrix tone */
+      --bg-core: #0A1412;
+      --bg-matrix: #0F1E1B;
+
+      /* Desaturated military green accent */
+      --accent-military: #7A8977;
+      --accent-military-light: #A8B3A3;
+
+      /* Industrial red */
+      --highlight-red: #D72421;
+
+      /* Off-white phosphor text */
+      --text-phosphor: #d8e5d8;
+
+      /* Structure Box Line Color */
+      --border-color: rgba(168, 179, 163, 0.4);
+
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-brand: 'Space Grotesk', sans-serif;
+    }
+
+    body,
+    html {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: var(--bg-core);
+      color: var(--text-phosphor);
+      font-family: var(--font-mono);
+      overflow: hidden;
+      /* No scrollbars on stream */
+      position: relative;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* CRT Scanlines and Matrix Background Gradient */
+    body {
+      background: radial-gradient(circle at center, var(--bg-matrix) 0%, var(--bg-core) 100%);
+    }
+
+    .crt-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* 3-5% Opacity Subtle Scanlines */
+    .crt-overlay::before {
+      content: " ";
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      background: linear-gradient(to bottom,
+          rgba(0, 0, 0, 0.05) 50%,
+          rgba(0, 0, 0, 0) 50%);
+      background-size: 100% 4px;
+      /* Tiny rapid scanline spacing */
+      opacity: 0.8;
+    }
+
+    .engine-container {
+      padding: 3rem;
+      height: 100vh;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      z-index: 10;
+      position: relative;
+    }
+
+    /* Structural Box */
+    .interface-box {
+      flex-grow: 1;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: row;
+      position: relative;
+      background: rgba(15, 30, 27, 0.6);
+      /* Slight matrix transparency */
+      margin-bottom: 2rem;
+    }
+
+    /* Left Strip containing dynamic rotated ID */
+    .left-strip {
+      width: 65px;
+      background-color: var(--text-phosphor);
+      /* Solid off-white/pale-green background matching left col */
+      color: var(--bg-core);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .strip-text {
+      transform: rotate(-90deg);
+      white-space: nowrap;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    /* Main Sectioning */
+    .main-grid {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top-section,
+    .bottom-section {
+      display: flex;
+      flex-direction: row;
+    }
+
+    .top-section {
+      border-bottom: 1px solid var(--border-color);
+      padding: 3rem 4rem;
+      align-items: center;
+    }
+
+    .bottom-section {
+      flex-grow: 1;
+      padding: 0 4rem;
+      display: flex;
+    }
+
+    /* Internal Columns */
+    .col-left {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-right: 1px solid var(--border-color);
+      padding-right: 4rem;
+    }
+
+    .bottom-section .col-left {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+
+    .col-right {
+      flex: 1;
+      padding-left: 4rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .bottom-section .col-right {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+      border-left: 1px solid transparent;
+      /* Keeps spacing identical without double border */
+    }
+
+    /* Top Right Area Menu */
+    .system-menu {
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .menu-spacer {
+      flex-grow: 1;
+      border-right: 1px solid var(--border-color);
+      height: 100%;
+    }
+
+    /* Brand Logo & Name Area */
+    .brand-block {
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    .brand-logo-box {
+      border: 1px solid var(--border-color);
+      padding: 1.5rem 1.8rem;
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .brand-logo-triangle {
+      width: 0;
+      height: 0;
+      border-left: 18px solid transparent;
+      border-right: 18px solid transparent;
+      border-bottom: 32px solid var(--text-phosphor);
+    }
+
+    .brand-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-brand);
+      color: var(--highlight-red);
+      font-size: 4rem;
+      /* Matching typography scale */
+      margin: 0;
+      line-height: 0.9;
+      font-weight: 700;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .dot-com {
+      font-family: var(--font-mono);
+      color: var(--text-phosphor);
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-left: 4px;
+      padding-bottom: 4px;
+    }
+
+    .sub-brand {
+      font-size: 1.1rem;
+      letter-spacing: 0.18rem;
+      color: var(--accent-military-light);
+      margin-top: 0.6rem;
+      font-weight: 500;
+    }
+
+    /* Modularity Defaults */
+    .data-label {
+      font-size: 0.9rem;
+      letter-spacing: 0.15rem;
+      color: var(--accent-military-light);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .data-value {
+      font-size: 4rem;
+      margin-top: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    /* Large Directive Name */
+    .big-directive {
+      font-size: 8rem;
+      line-height: 1;
+      margin: 0;
+      font-weight: 600;
+      letter-spacing: 0.05rem;
+    }
+
+    /* Dynamic Divider */
+    .date-label {
+      font-size: 1rem;
+      letter-spacing: 0.2rem;
+      color: var(--accent-military-light);
+      margin-top: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .date-line {
+      flex-grow: 1;
+      height: 2px;
+      background: repeating-linear-gradient(to right, var(--accent-military-light), var(--accent-military-light) 2px, transparent 2px, transparent 6px);
+      opacity: 0.3;
+    }
+
+    /* Main Title text */
+    .operation-title {
+      font-size: 3rem;
+      margin-top: 1.5rem;
+      max-width: 80%;
+      /* Boxed look */
+      line-height: 1.15;
+      text-transform: uppercase;
+      font-weight: 500;
+      letter-spacing: 0.05rem;
+    }
+
+    /* List Item rows for top right */
+    .list-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+      font-size: 0.95rem;
+      letter-spacing: 0.15rem;
+      color: var(--accent-military-light);
+      text-transform: uppercase;
+    }
+
+    .list-item span:first-child {
+      font-weight: 600;
+    }
+
+    /* Route Icon Custom Text */
+    .route-icon {
+      font-size: 1.5rem;
+      color: var(--text-phosphor);
+      line-height: 0.5;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    /* REACTIVE SYSTEM: Phosphor Audio Bars */
+    .meter-container {
+      margin-top: auto;
+    }
+
+    .barcode {
+      display: block;
+      height: 80px;
+      border-bottom: 2px solid var(--accent-military-light);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .bar {
+      flex-grow: 1;
+      background-color: var(--accent-military-light);
+      height: 10%;
+      /* dynamic */
+      transition: height 0.05s ease-out;
+      /* snap reaction */
+    }
+
+    /* Floating elements strictly removed - anchoring text instead */
+    .session-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      font-size: 1.1rem;
+      font-weight: 600;
+      letter-spacing: 0.25rem;
+      color: var(--text-phosphor);
+      padding: 0 4px;
+      margin-top: -10px;
+    }
+
+    .session-line {
+      flex-grow: 1;
+      height: 1px;
+      background-color: var(--border-color);
+      margin: 0 3rem 0.6rem 3rem;
+    }
+
+    /* Track Control Styles */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .btn-edit {
+      font: 600 12px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(225, 235, 230, 0.85);
+      background: transparent;
+      border: 1px solid rgba(225, 235, 230, 0.18);
+      padding: 6px 10px;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      outline: none;
+    }
+
+    .scroll-btn {
+      color: var(--accent-military-light) !important;
+      border-color: rgba(225, 235, 230, 0.08) !important;
+    }
+
+    .btn-edit:hover {
+      border-color: rgba(225, 235, 230, 0.35);
+    }
+
+    .track-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .track-label {
+      opacity: 0.75;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: var(--font-mono);
+    }
+
+    .track-value-wrap {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      margin-left: 1rem;
+    }
+
+    .track-value {
+      white-space: nowrap;
+      will-change: transform;
+      font-weight: 300;
+      color: var(--text-phosphor);
+      font-size: 4rem;
+      letter-spacing: 0.05rem;
+    }
+
+    .track-value.ticker {
+      padding-left: 100%;
+      display: inline-block;
+      animation: trackTicker 45s linear infinite;
+    }
+
+    @keyframes trackTicker {
+      0% {
+        transform: translateX(0);
+      }
+
+      100% {
+        transform: translateX(-100%);
+      }
+    }
+
+    .track-value-small {
+      white-space: nowrap;
+      will-change: transform;
+      font-weight: bold;
+      color: var(--text-phosphor);
+    }
+
+    .modal.hidden {
+      display: none;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+
+    .modal-card {
+      width: min(560px, 92vw);
+      background: rgba(10, 20, 18, 0.98);
+      border: 1px solid rgba(225, 235, 230, 0.18);
+      padding: 16px;
+    }
+
+    .modal-title {
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    .modal-input {
+      width: 100%;
+      background: transparent;
+      border: 1px solid rgba(225, 235, 230, 0.18);
+      color: rgba(225, 235, 230, 0.95);
+      padding: 10px 12px;
+      outline: none;
+      font: 600 14px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-family: var(--font-mono);
+      box-sizing: border-box;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn-secondary,
+    .btn-primary {
+      font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      padding: 8px 12px;
+      cursor: pointer;
+      border: 1px solid rgba(225, 235, 230, 0.18);
+      background: transparent;
+      color: rgba(225, 235, 230, 0.9);
+      font-family: var(--font-mono);
+    }
+
+    .btn-primary {
+      border-color: rgba(255, 50, 50, 0.35);
+    }
+
+    .modal-hint {
+      margin-top: 10px;
+      opacity: 0.6;
+      font-size: 12px;
+    }
+
+    .track-value.scroll,
+    .track-value-small.scroll {
+      animation: trackMarquee 14s linear infinite;
+    }
+
+    @keyframes trackMarquee {
+      0% {
+        transform: translateX(0);
+      }
+
+      10% {
+        transform: translateX(0);
+      }
+
+      90% {
+        transform: translateX(-50%);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    /* TikTok Mode (.tt) Overrides */
+    body.tt {
+      overflow-y: auto;
+    }
+
+    body.tt .engine-container {
+      padding: 4rem 1.5rem 2rem 1.5rem;
+      height: auto;
+      min-height: 100vh;
+    }
+
+    body.tt .interface-box {
+      flex-direction: column;
+      flex-grow: 1;
+    }
+
+    body.tt .left-strip {
+      width: 100%;
+      height: 35px;
+      border-right: none;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    body.tt .strip-text {
+      transform: none;
+      white-space: normal;
+      text-align: center;
+    }
+
+    body.tt .top-section {
+      flex-direction: column;
+      padding: 2rem;
+      border-bottom: none;
+    }
+
+    body.tt .top-section .col-left {
+      border-right: none;
+      padding-right: 0;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    body.tt .top-section .col-right {
+      padding-left: 0;
+      padding-top: 2rem;
+      text-align: left;
+    }
+
+    body.tt .menu-spacer {
+      display: none;
+    }
+
+    body.tt .system-menu {
+      margin-bottom: 2rem;
+    }
+
+    body.tt #ui-version {
+      text-align: left;
+    }
+
+    body.tt .bottom-section {
+      flex-direction: column;
+      padding: 0 2rem 2rem 2rem;
+    }
+
+    body.tt .bottom-section .col-left {
+      border-right: none;
+      padding-right: 0;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 2rem;
+    }
+
+    body.tt .bottom-section .col-right {
+      border-left: none;
+      padding-left: 0;
+      padding-top: 2rem;
+      flex-grow: 1;
+      justify-content: flex-start;
+      gap: 2rem;
+    }
+
+    body.tt .brand-text h1 {
+      font-size: 3rem;
+    }
+
+    body.tt .directive-row {
+      flex-direction: row;
+      align-items: baseline;
+      gap: 1rem;
+    }
+
+    body.tt .track-value-wrap {
+      margin-left: 0;
+    }
+
+    body.tt .track-value {
+      font-size: 2.8rem;
+    }
+
+    body.tt .big-directive {
+      font-size: 5rem;
+    }
+
+    body.tt .operation-title {
+      font-size: 2.5rem;
+    }
+
+    body.tt .data-value {
+      font-size: 3rem;
+    }
+
+    body.tt .version-container {
+      display: none !important;
+    }
+
+    body.tt .scroll-btn {
+      display: none !important;
+    }
+
+    body.tt .session-footer {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: center;
+      margin-top: 1rem;
+    }
+
+    body.tt .session-line {
+      display: none;
+    }
+
+    /* Signal Feed phosphor effect */
+    .signal-feed-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) sepia(1) hue-rotate(85deg) brightness(1.1) contrast(1.2);
+      opacity: 0.85;
+      transition: opacity 0.1s ease-out;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .beat-flash {
+      opacity: 1 !important;
+      filter: grayscale(1) sepia(1) hue-rotate(85deg) brightness(1.6) contrast(1.4) !important;
+    }
+
+    .video-replay-container {
+      width: 300px;
+      height: 300px;
+      border: 1px solid var(--border-color);
+      background: rgba(0,0,0,0.5);
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .video-replay-feed {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) sepia(1) hue-rotate(85deg) brightness(0.9) contrast(1.1);
+      opacity: 0.9;
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0.15) 0px, rgba(0,0,0,0.15) 1px, transparent 1px, transparent 2px);
+    }
+
+    /* Searching / No Signal static effect */
+    #video-feed-container::before {
+      content: "SEARCHING FOR SIGNAL...";
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      color: var(--accent-military-light);
+      letter-spacing: 2px;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), 
+                  repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.01), rgba(255, 255, 255, 0.01) 1px, transparent 1px, transparent 2px);
+      z-index: 0;
+      opacity: 0.5;
+    }
+  </style>
+</head>
+
+<body class="yt">
+  <div class="crt-overlay"></div>
+
+  <div class="engine-container">
+    <div class="interface-box">
+      <!-- 1) System Framing / Operative ID Strip -->
+      <div class="left-strip">
+        <div class="strip-text" id="ui-directive-strip">D2 // SIGNAL OPERATIONS GROUP</div>
+      </div>
+
+      <div class="main-grid">
+
+        <!-- Top Half -->
+        <div class="top-section">
+          <div class="col-left" style="border-right:none;">
+            <!-- 7) Persistent Identity Anchor -->
+            <div class="brand-block">
+              <div class="brand-logo-box">
+                <div class="brand-logo-triangle"></div>
+              </div>
+              <div class="brand-text">
+                <h1>RokoRobo<span class="dot-com">.COM</span></h1>
+                <div class="sub-brand">INDUSTRIAL SIGNAL CORE</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="header-center-area" class="col-right" style="flex: 4; height: 130px; padding: 0 2rem; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; position: relative;">
+            
+            <!-- Scrolling Track Header (Primary Display) -->
+            <div id="scrolling-track-container" style="width: 100%; height: 130px; overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
+               <div class="track-value-wrap" style="width: 100%; border: none; padding: 0; display: flex; justify-content: center;">
+                <div id="trackValueBig" class="track-value ticker" style="font-size: 5rem; letter-spacing: -2px; padding: 0 4rem;">—</div>
+              </div>
+            </div>
+
+            <!-- System Index (Toggled Mode) -->
+            <div id="system-index-container" class="system-menu hidden" style="width: 100%; height: 130px; border: none; padding: 10px 0;">
+              <div class="list-item"><span style="color: var(--accent-military-light); font-weight: bold;">SYSTEM INDEX</span></div>
+              <div class="list-item" id="audioSetupBtn" style="cursor: pointer; opacity: 0.8;"><span>AUDIO SETUP</span><span>[?]</span></div>
+              <div class="list-item" id="toggleAudioBtn" style="cursor: pointer; opacity: 0.8;"><span>AUDIO SRC</span><span id="ui-audio-status">VB</span></div>
+              <div class="list-item" id="toggleVizBtn" style="cursor: pointer; opacity: 0.8;"><span>VIZ MODE</span><span id="ui-viz-status">BARS</span></div>
+              <div class="list-item" id="toggleLayoutBtn" style="cursor: pointer; opacity: 0.8;"><span>LAYOUT</span><span id="ui-layout-status">AUTO</span></div>
+            </div>
+          </div>
+
+          <div class="col-right" style="flex: 1.2; padding-left: 2rem; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end; border-left: 1px solid var(--border-color);">
+            <button id="viewToggleBtn" class="btn-edit" 
+              style="width: 100%; height: 60%; display: flex; align-items: center; justify-content: center; font-size: 14px; border: 1px solid var(--highlight-red); color: var(--highlight-red); background: rgba(215, 36, 33, 0.1); cursor: pointer; font-weight: bold; letter-spacing: 1px;">
+              [V-FEED_VIEW]
+            </button>
+            <div class="version-container" style="text-align: right; margin-top: auto;">
+              <div class="data-value" id="ui-version" style="font-size: 2.5rem; opacity: 0.8;">24:B</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Half: Structured Hierarchy (Expanded V-FEED) -->
+        <div class="bottom-section" style="display: flex; width: 100%;">
+          <div class="col-left" style="flex: 0 0 50%; width: 50%; display: flex; flex-direction: column; padding-top: 1.5rem; padding-bottom: 2rem; border-right: 1px solid var(--border-color); padding-left: 2rem; padding-right: 2rem;">
+            
+            <!-- Top: Directive & Massive V-FEED -->
+            <div style="display: flex; align-items: flex-start; gap: 2rem; width: 100%; flex-grow: 1;">
+              <h2 class="big-directive" id="ui-directive" style="margin: 0; line-height: 0.8; font-size: 8rem;">A2</h2>
+              
+              <div id="video-feed-container"
+                style="flex-grow: 1; height: 460px; overflow: hidden; position: relative; background: rgba(0,0,0,0.4); border: 1px solid var(--border-color);">
+                <!-- Image Sequencer Layer (Fallback) -->
+                <img id="signal-feed-img" class="signal-feed-img" src="frames/frame1.png" alt="Signal Feed" style="position: absolute; inset: 0;">
+                <!-- Video Layer (Primary) -->
+                <video id="bgVideo" class="video-replay-feed" autoplay loop muted playsinline style="position: absolute; inset: 0; z-index: 1;"></video>
+                
+                <div style="position: absolute; top: 12px; left: 16px; font-size: 11px; color: var(--accent-military-light); font-family: var(--font-mono); letter-spacing: 2px; font-weight: bold; background: rgba(0,0,0,0.85); padding: 5px 10px; z-index: 2; border: 1px solid rgba(168, 179, 163, 0.3);">
+                  V-FEED // TACTICAL_RECON [S-RANGE_ACTIVE]
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom: Core Signal Control (Integrated Proximity) -->
+            <div style="width: 100%; margin-top: 1.5rem;">
+              <div class="panel-header" style="margin: 0; padding: 10px 16px; border: 1px solid rgba(168, 179, 163, 0.2); background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: space-between;">
+                <div class="operation-title" style="margin-top:0; font-size: 0.9rem; line-height: 1.2; letter-spacing: 1px;">CORE SIGNAL CONTROL</div>
+                <div style="display: flex; gap: 0.8rem;">
+                  <button id="toggleScrollBtn" class="btn-edit" type="button" style="border-color: var(--accent-military-light); color: var(--accent-military-light); font-size: 11px;">[SCROLL ON]</button>
+                  <button id="editTrackBtn" class="btn-edit" type="button" style="border-color: var(--highlight-red); color: var(--highlight-red); background: rgba(215, 36, 33, 0.05); font-size: 11px;">[EDIT TRACK]</button>
+                </div>
+              </div>
+              <div style="font-size: 10px; color: var(--accent-military-light); opacity: 0.5; margin-top: 6px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px;">
+                SUBSYSTEM_SYNC: <span id="ui-version-label">TX-2402-24:B</span> // STATUS: NOMINAL
+              </div>
+            </div>
+
+            <div class="date-label" style="margin-top: 2rem;">
+              <span id="ui-date">FEBRUARY 2026</span>
+              <div class="date-line"></div>
+            </div>
+          </div>
+
+            <!-- Meters Section: Compact Data Flow (Horizon Anchored) -->
+            <div style="width: 100%; padding: 0 1.5rem; height: 460px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden;">
+              
+              <!-- Top Data Hub (Vertical Stack) -->
+              <div style="display: flex; flex-direction: column; gap: 0.6rem; border-bottom: 1px solid rgba(168, 179, 163, 0.1); padding-bottom: 1.2rem;">
+                <div class="data-label">SIGNAL ROUTING: <span id="ui-routing" style="color: white; margin-left: 0.5rem;">PGE</span></div>
+                
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                  <div class="data-label" style="font-size: 11px;">ANALYSIS_SENSITIVITY:</div>
+                  <div id="ui-sensitivity-label" style="font-size: 11px; font-family: var(--font-mono); color: var(--accent-military-light);">
+                    <button id="btn-sens-down" class="btn-edit" style="padding: 1px 6px;">-</button>
+                    <span id="ui-sensitivity">1.0x</span>
+                    <button id="btn-sens-up" class="btn-edit" style="padding: 1px 6px;">+</button>
+                  </div>
+                </div>
+
+                <div style="font-family: var(--font-mono); font-size: 11px; color: var(--accent-military-light); opacity: 0.7;">
+                  <span id="ui-session">SESSION: TX-2402-A2</span> // <span id="ui-timer">00:00:00</span>
+                </div>
+              </div>
+
+              <!-- 4) Signal Direction / Meter Indicators (Horizon Aligned) -->
+              <div class="meter-container" style="display: flex; flex-direction: column; gap: 1.5rem; width: 90%;">
+                <div>
+                  <div class="data-label" style="margin-bottom: 0.5rem;">LEFT DIRECTIONal_recon</div>
+                  <div class="barcode" id="audio-visualizer-left-wrap" style="height: 70px;">
+                    <canvas id="viz-canvas-left" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="data-label" style="margin-bottom: 0.5rem;">RIGHT DIRECTIONal_recon</div>
+                  <div class="barcode" id="audio-visualizer-right-wrap" style="height: 70px;">
+                    <canvas id="viz-canvas-right" style="width: 100%; height: 100%;"></canvas>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Margin / Space -->
+            <div style="flex-grow: 1;"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- 8) Data Archive Reference (Footer) -->
+    <div class="session-footer">
+      <div>// DATA ARCHIVES</div>
+      <div class="session-line"></div>
+      <div>SECURE_ACCESS</div>
+    </div>
+  </div>
+
+  <!-- Hidden modal -->
+  <div id="trackModal" class="modal hidden" aria-hidden="true">
+    <div class="modal-card">
+      <div class="modal-title">SET ACTIVE TRACK</div>
+      <input id="trackInput" class="modal-input" type="text" maxlength="30"
+        placeholder="Paste song name... (e.g., UNDER HYPNOSIS)" />
+      
+      <div class="modal-title" style="margin-top: 15px; font-size: 13px;">VIDEO BACKGROUND (videos/*.mp4)</div>
+      <input id="videoInput" class="modal-input" type="text"
+        placeholder="e.g. signal_loop.mp4" />
+
+      <div class="modal-actions">
+        <button id="trackCancel" class="btn-secondary" type="button">Cancel</button>
+        <button id="trackApply" class="btn-primary" type="button">Apply</button>
+      </div>
+      <div class="modal-hint">Tip: Place videos in 'live/videos/' folder.</div>
+    </div>
+  </div>
+  </div>
+
+  <!-- Audio Help Modal -->
+  <div id="audioHelpModal" class="modal hidden" aria-hidden="true" style="z-index: 10000;">
+    <div class="modal-card" style="width: min(720px, 92vw); max-height: 85vh; overflow-y: auto;">
+      <div class="modal-title">AUDIO ROUTING MANUAL (VB-CABLE)</div>
+
+      <div
+        style="font-family: var(--font-mono); font-size: 13px; color: rgba(225, 235, 230, 0.85); margin-top: 20px; line-height: 1.5;">
+        <p
+          style="color: var(--highlight-red); font-weight: bold; margin-bottom: 20px; font-size: 12px; letter-spacing: 0.5px;">
+          // VIRTUAL CABLE SETUP REQUIRED FOR BROWSER AUDIO</p>
+
+        <p style="color: var(--text-phosphor); font-weight: bold; margin-bottom: 10px; font-size: 14px;">STEP 1: ROUTE
+          CHROME (SUNO) AUDIO TO VIRTUAL CABLE</p>
+        <ul style="margin-bottom: 25px; padding-left: 20px; opacity: 0.9;">
+          <li style="margin-bottom: 8px;">Open <strong>Windows Settings</strong> &gt; System &gt; Sound &gt;
+            <strong>Volume mixer</strong> (or search "Sound Mixer Options").
+          </li>
+          <li style="margin-bottom: 8px;">Find the app playing your music (e.g., Google Chrome, Edge).</li>
+          <li style="margin-bottom: 8px;">Change its <strong>Output</strong> dropdown from "Default" to <strong>CABLE
+              Input (VB-Audio Virtual Cable)</strong>.</li>
+          <li style="color: var(--accent-military-light);"><em>(Result: The visualizer bars will now start jumping to
+              the music, but your earphones will go silent).</em></li>
+        </ul>
+
+        <p style="color: var(--text-phosphor); font-weight: bold; margin-bottom: 10px; font-size: 14px;">STEP 2: LISTEN
+          TO THE CABLE IN YOUR EARPHONES</p>
+        <ul style="margin-bottom: 25px; padding-left: 20px; opacity: 0.9;">
+          <li style="margin-bottom: 8px;">Press <strong>Windows Key + R</strong>, type <code
+              style="background: rgba(255,255,255,0.1); padding: 2px 6px;">mmsys.cpl</code>, and press Enter.</li>
+          <li style="margin-bottom: 8px;">Click the <strong>Recording</strong> tab at the top.</li>
+          <li style="margin-bottom: 8px;">Right-click <strong>CABLE Output</strong> (or VB-Audio Virtual Cable) and
+            select <strong>Properties</strong>.</li>
+          <li style="margin-bottom: 8px;">Click the <strong>Listen</strong> tab and check the box <strong>"Listen to
+              this device"</strong>.</li>
+          <li style="margin-bottom: 8px;">In the dropdown right below it ("Playback through this device"), select your
+            personal <strong>Speakers / Earphones</strong>.</li>
+          <li style="margin-bottom: 8px;">Click <strong>Apply</strong> and <strong>OK</strong>.</li>
+        </ul>
+
+        <p style="color: var(--text-phosphor); font-weight: bold; margin-bottom: 10px; font-size: 14px;">STEP 3: ENGINE
+          CONFIGURATION</p>
+        <ul style="padding-left: 20px; opacity: 0.9;">
+          <li style="margin-bottom: 8px;">Ensure the engine's <strong>AUDIO SRC</strong> (top right) is set to
+            <strong>[VB]</strong> to force the visualizer to lock onto the Virtual Cable.
+          </li>
+          <li>Use the <strong>GAIN</strong> (- / +) controls slowly on the main console to adjust visualizer
+            sensitivity.</li>
+        </ul>
+      </div>
+
+      <div class="modal-actions"
+        style="margin-top: 30px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <button id="audioHelpCloseBtn" class="btn-primary" type="button">ACKNOWLEDGE & CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================
+       AUDIO REACTIVE SYSTEM (Enhanced Multi-Mode)
+       ========================================= */
+    let vizMode = localStorage.getItem('rkrbt_viz_mode') || 'BARS';
+    const uiVizStatus = document.getElementById('ui-viz-status');
+    if (uiVizStatus) uiVizStatus.innerText = vizMode;
+
+    const canvasL = document.getElementById('viz-canvas-left');
+    const canvasR = document.getElementById('viz-canvas-right');
+    const ctxL = canvasL.getContext('2d');
+    const ctxR = canvasR.getContext('2d');
+
+    function resizeCanvases() {
+      [canvasL, canvasR].forEach(canvas => {
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width * window.devicePixelRatio;
+        canvas.height = rect.height * window.devicePixelRatio;
+      });
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases();
+
+    async function activateSignalEngine() {
+      try {
+        const baseConstraints = {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+          channelCount: 2
+        };
+
+        let stream = await navigator.mediaDevices.getUserMedia({ audio: baseConstraints });
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(d => d.kind === 'audioinput');
+
+        const vbCable = audioInputs.find(device => {
+          const label = device.label.toLowerCase();
+          return label.includes('cable') || label.includes('vb-audio') || label.includes('vb');
+        });
+
+        let audioMode = localStorage.getItem('rkrbt_audio_mode') || 'VB';
+        let mainStream = stream;
+        let connectedDeviceName = "Unknown Device";
+        let defaultMicStream = null;
+
+        if (audioMode === 'MUTE') {
+          stream.getTracks().forEach(track => track.stop());
+          mainStream = null;
+          connectedDeviceName = "MUTED";
+        } else if (vbCable && (audioMode === 'MIX' || audioMode === 'VB' || audioMode === 'VB+MIC')) {
+          try {
+            mainStream = await navigator.mediaDevices.getUserMedia({
+              audio: { ...baseConstraints, deviceId: { exact: vbCable.deviceId } }
+            });
+            connectedDeviceName = vbCable.label || "VB Cable";
+            if (audioMode === 'MIX' || audioMode === 'VB+MIC') {
+              defaultMicStream = stream;
+              connectedDeviceName += " + DJ Mic";
+            } else {
+              stream.getTracks().forEach(track => track.stop());
+              connectedDeviceName += " (MIC MAP: OFF)";
+            }
+          } catch (err) { }
+        } else {
+          if (stream.getAudioTracks().length > 0) {
+            connectedDeviceName = stream.getAudioTracks()[0].label;
+          }
+        }
+
+        window.rkrbtConnectedDevice = connectedDeviceName;
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const splitter = audioContext.createChannelSplitter(2);
+        const analyserLeft = audioContext.createAnalyser();
+        const analyserRight = audioContext.createAnalyser();
+
+        analyserLeft.fftSize = 256; 
+        analyserRight.fftSize = 256;
+
+        if (mainStream) {
+          const mainSource = audioContext.createMediaStreamSource(mainStream);
+          mainSource.connect(splitter);
+          if (defaultMicStream && mainStream !== defaultMicStream) {
+            const djMicSource = audioContext.createMediaStreamSource(defaultMicStream);
+            djMicSource.connect(splitter);
+          }
+        }
+
+        splitter.connect(analyserLeft, 0);
+        splitter.connect(analyserRight, 1);
+
+        const bufferLength = analyserLeft.frequencyBinCount;
+        const dataFreqL = new Uint8Array(bufferLength);
+        const dataFreqR = new Uint8Array(bufferLength);
+        const dataTimeL = new Uint8Array(bufferLength);
+        const dataTimeR = new Uint8Array(bufferLength);
+
+        let globalSensitivity = parseFloat(localStorage.getItem('rkrbt_meter_gain')) || 1.0;
+
+        function updateSensLabel() {
+          const sensVal = document.getElementById('ui-sensitivity');
+          if (sensVal) sensVal.innerText = globalSensitivity.toFixed(1) + 'x';
+          const sensLabelObj = document.getElementById('ui-sensitivity-label');
+          if (sensLabelObj) {
+            if (globalSensitivity >= 3.0) {
+              sensLabelObj.style.color = 'var(--text-phosphor)';
+              sensLabelObj.style.textShadow = '0 0 5px rgba(216,229,216,0.3)';
+            } else {
+              sensLabelObj.style.color = 'var(--accent-military-light)';
+              sensLabelObj.style.textShadow = 'none';
+            }
+          }
+        }
+        updateSensLabel();
+
+        const sensUp = document.getElementById('btn-sens-up');
+        const sensDown = document.getElementById('btn-sens-down');
+        sensUp?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          globalSensitivity = Math.min(globalSensitivity + 0.5, 5.0);
+          updateSensLabel();
+          localStorage.setItem('rkrbt_meter_gain', globalSensitivity.toFixed(1));
+        });
+        sensDown?.addEventListener('click', (e) => {
+          e.stopPropagation();
+          globalSensitivity = Math.max(globalSensitivity - 0.5, 0.5);
+          updateSensLabel();
+          localStorage.setItem('rkrbt_meter_gain', globalSensitivity.toFixed(1));
+        });
+
+        function drawViz(ctx, dataFreq, dataTime, width, height) {
+          ctx.clearRect(0, 0, width, height);
+          ctx.lineCap = 'round';
+          ctx.lineWidth = 2 * window.devicePixelRatio;
+          const color = getComputedStyle(document.documentElement).getPropertyValue('--accent-military-light').trim();
+          ctx.strokeStyle = color;
+          ctx.fillStyle = color;
+
+          if (vizMode === 'BARS' || vizMode === 'BLOCKS') {
+            const barCount = 45;
+            const barWidth = (width / barCount);
+            const gutter = 3 * window.devicePixelRatio;
+
+            for (let i = 0; i < barCount; i++) {
+              const dataIndex = Math.floor((i / barCount) * (bufferLength * 0.6));
+              const val = (dataFreq[dataIndex] || 0) * globalSensitivity;
+              let barHeight = (val / 255) * height;
+              if (barHeight < 2) barHeight = 2; // Ambient baseline
+
+              const x = i * barWidth;
+              const y = height - barHeight;
+
+              if (vizMode === 'BARS') {
+                ctx.fillRect(x + gutter/2, y, barWidth - gutter, barHeight);
+              } else {
+                // BLOCKS mode
+                const segmentHeight = 6 * window.devicePixelRatio;
+                const segmentGap = 2 * window.devicePixelRatio;
+                const segments = Math.floor(barHeight / (segmentHeight + segmentGap));
+                for(let s=0; s<segments; s++) {
+                  ctx.fillRect(x + gutter/2, height - (s+1)*(segmentHeight+segmentGap), barWidth - gutter, segmentHeight);
+                }
+              }
+            }
+          } else if (vizMode === 'OSCILLOSCOPE') {
+            ctx.beginPath();
+            const sliceWidth = (width / bufferLength);
+            let x = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              const v = ((dataTime[i] - 128) / 128.0) * globalSensitivity;
+              const y = (height / 2) + (v * height / 2);
+              
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+              x += sliceWidth;
+            }
+            ctx.stroke();
+          }
+        }
+
+        /* =========================================
+           BEAT DETECTION & SEQUENCER LOGIC
+           ========================================= */
+        const frames = ["frames/frame1.png", "frames/frame2.png", "frames/frame3.png", "frames/frame4.png"];
+        let currentFrameIdx = 0;
+        let lastBeatTime = 0;
+        let beatCooldown = 180; // ms between allow beats
+        let energyAvg = 0;
+        const subBassBins = 4; // Check very first bins for kick energy
+
+        const feedImg = document.getElementById('signal-feed-img');
+        const frameCounter = document.getElementById('ui-frame-id');
+
+        function advanceFrame() {
+          currentFrameIdx = (currentFrameIdx + 1) % frames.length;
+          if (feedImg) {
+            feedImg.src = frames[currentFrameIdx];
+            feedImg.classList.add('beat-flash');
+            setTimeout(() => feedImg.classList.remove('beat-flash'), 150);
+          }
+          if (frameCounter) {
+            frameCounter.innerText = `FRAME: 0${currentFrameIdx + 1}/04`;
+          }
+        }
+
+        function renderFrame() {
+          requestAnimationFrame(renderFrame);
+          
+          // Always fetch frequency data for beat detection
+          analyserLeft.getByteFrequencyData(dataFreqL);
+          analyserRight.getByteFrequencyData(dataFreqR);
+
+          if (vizMode === 'OSCILLOSCOPE') {
+            analyserLeft.getByteTimeDomainData(dataTimeL);
+            analyserRight.getByteTimeDomainData(dataTimeR);
+          }
+
+          // BEAT DETECTION (Bass Energy Trigger)
+          let currentEnergy = 0;
+          for (let i = 0; i < subBassBins; i++) {
+            currentEnergy += (dataFreqL[i] + dataFreqR[i]) / 2;
+          }
+          currentEnergy /= subBassBins;
+
+          // Smooth average for dynamic thresholding
+          energyAvg = energyAvg * 0.94 + currentEnergy * 0.06;
+
+          const now = Date.now();
+          // Sensitivity increased (1.25 ratio instead of 1.5)
+          if (currentEnergy > energyAvg * 1.25 && currentEnergy > 40 && (now - lastBeatTime) > beatCooldown) {
+            advanceFrame();
+            lastBeatTime = now;
+          }
+
+          drawViz(ctxL, dataFreqL, dataTimeL, canvasL.width, canvasL.height);
+          drawViz(ctxR, dataFreqR, dataTimeR, canvasR.width, canvasR.height);
+        }
+
+        renderFrame();
+      } catch (err) {
+        console.error("Audio Engine Failure:", err);
+      }
+    }
+
+    document.body.addEventListener('click', () => { activateSignalEngine(); }, { once: true });
+    activateSignalEngine();
+
+
+
+    /* =========================================
+       STATE FETCHING (File I/O Sync for OBS)
+       ========================================= */
+    async function synchronizeState() {
+      try {
+        // Time hack avoids aggressive browser caching
+        const t = new Date().getTime();
+
+        const configRes = await fetch('config.json?v=' + t);
+        if (configRes.ok) {
+          const config = await configRes.json();
+          document.getElementById('ui-directive').innerText = config.directive || 'A2';
+          document.getElementById('ui-version').innerText = config.session_version || '24:B';
+
+          // Inject the audio routing information directly into the UI Routing block
+          document.getElementById('ui-routing').innerHTML = `
+            <div style="line-height: 0.8;">${config.routing || 'PGE'}</div>
+            <div style="font-size:10px; opacity:0.6; font-family:var(--font-mono); line-height:1; margin-top:0.4rem; letter-spacing:0.05rem;">
+              ${window.rkrbtConnectedDevice || 'SCANNING...'}
+            </div>
+          `;
+
+          document.getElementById('ui-directive-strip').innerText = `${config.directive} // SIGNAL OPERATIONS GROUP`;
+
+          let activeLayout = config.layout || 'youtube';
+          const override = localStorage.getItem('rkrbt_layout_override');
+
+          if (override && override !== 'auto') {
+            activeLayout = override;
+            const statusEl = document.getElementById('ui-layout-status');
+            if (statusEl) statusEl.innerText = override === 'youtube' ? 'YT' : 'TT';
+          } else {
+            const statusEl = document.getElementById('ui-layout-status');
+            if (statusEl) statusEl.innerText = 'AUTO';
+          }
+
+          if (activeLayout === 'tiktok') {
+            document.body.classList.add('tt');
+            document.body.classList.remove('yt');
+          } else {
+            document.body.classList.add('yt');
+            document.body.classList.remove('tt');
+          }
+        }
+
+        const sessionRes = await fetch('session.txt?v=' + t);
+        if (sessionRes.ok) {
+          const sessionText = await sessionRes.text();
+          document.getElementById('ui-session').innerText = sessionText.trim() || 'SESSION: TX-2402-A2';
+        }
+      } catch (err) {
+        // File not found / CORS error tracking 
+        // (OBS ignores CORS if source is local file)
+      }
+    }
+
+    // Heartbeat every 2 seconds for hands-off live updates
+    setInterval(synchronizeState, 2000);
+    synchronizeState();
+
+
+    /* =========================================
+       PROCEDURAL CONTINUITY TIMERS
+       ========================================= */
+    let sessionStart = Date.now();
+    setInterval(() => {
+      let runTime = Date.now() - sessionStart;
+      let d = new Date(runTime);
+
+      let hr = String(d.getUTCHours()).padStart(2, '0');
+      let min = String(d.getUTCMinutes()).padStart(2, '0');
+      let sec = String(d.getUTCSeconds()).padStart(2, '0');
+
+      document.getElementById('ui-timer').innerText = `${hr}:${min}:${sec}`;
+    }, 1000);
+
+    // Month Indexing System
+    const systemMonths = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+    const currentTime = new Date();
+    document.getElementById('ui-date').innerText = `${systemMonths[currentTime.getMonth()]} ${currentTime.getFullYear()}`;
+
+    /* =========================================
+       TRACK EDITOR LOGIC
+       ========================================= */
+    (() => {
+      const STORAGE_KEY = "rkrbt_now_playing";
+      const VIDEO_KEY = "rkrbt_video_src";
+      const MAPPING_KEY = "rkrbt_video_mapping";
+
+      const editBtn = document.getElementById("editTrackBtn");
+      const modal = document.getElementById("trackModal");
+      const trackInput = document.getElementById("trackInput");
+      const videoInput = document.getElementById("videoInput");
+      trackInput.maxLength = 30; 
+      const applyBtn = document.getElementById("trackApply");
+      const cancelBtn = document.getElementById("trackCancel");
+      const trackValueBig = document.getElementById("trackValueBig");
+      const trackValueSmall = document.getElementById("trackValueSmall");
+      const bgVideo = document.getElementById("bgVideo");
+
+      const toggleScrollBtn = document.getElementById("toggleScrollBtn");
+      let isScrolling = localStorage.getItem('rkrbt_scrolling') !== 'false';
+
+      function updateScrollState() {
+        if (toggleScrollBtn) {
+          toggleScrollBtn.textContent = isScrolling ? "[SCROLL ON]" : "[SCROLL OFF]";
+        }
+        const clean = localStorage.getItem(STORAGE_KEY) || "";
+        if (trackValueBig) {
+          if (isScrolling && clean.length > 0) {
+            trackValueBig.classList.add("ticker");
+          } else {
+            trackValueBig.classList.remove("ticker");
+          }
+        }
+      }
+
+      toggleScrollBtn?.addEventListener('click', () => {
+        isScrolling = !isScrolling;
+        localStorage.setItem('rkrbt_scrolling', isScrolling.toString());
+        updateScrollState();
+      });
+
+      function setSessionData(trackText, videoFile) {
+        // Track Text Logic
+        let clean = (trackText || "").trim();
+        if (clean.length > 30) clean = clean.substring(0, 30);
+        const display = clean.length ? clean : "—";
+
+        if (trackValueBig) trackValueBig.textContent = display;
+        if (trackValueSmall) {
+          trackValueSmall.textContent = display;
+          trackValueSmall.classList.toggle("scroll", trackValueSmall.scrollWidth > trackValueSmall.clientWidth + 2 && clean.length > 0);
+        }
+        localStorage.setItem(STORAGE_KEY, clean);
+
+        // Video Channel Logic: Priority is manual entry -> Auto-Mapping -> Auto-Guessing
+        let vClean = (videoFile || "").trim();
+        
+        // Auto-Guessing: If no video is specified, try to find trackName (will append .mp4 next)
+        if (!vClean.length && clean.length && clean !== "—") {
+          vClean = clean;
+        }
+
+        if (vClean.length) {
+          // Normalize path: support both videos/ and Videos/ cases
+          if (!vClean.toLowerCase().startsWith('videos/')) {
+             vClean = 'videos/' + vClean;
+          }
+          // Automatically append .mp4 if missing
+          if (!vClean.toLowerCase().endsWith('.mp4')) {
+             vClean = vClean + ".mp4";
+          }
+          
+          // Store mapping if we have an actual track name
+          if (clean.length && clean !== "—") {
+            try {
+              const mapping = JSON.parse(localStorage.getItem(MAPPING_KEY) || "{}");
+              mapping[clean.toUpperCase()] = vClean;
+              localStorage.setItem(MAPPING_KEY, JSON.stringify(mapping));
+            } catch(e) {}
+          }
+
+          if (bgVideo.getAttribute('src') !== vClean) {
+            // Encode URI to handle spaces and special characters in filenames (e.g., ! and space)
+            bgVideo.src = encodeURI(vClean); 
+            bgVideo.load();
+            bgVideo.play()
+              .then(() => console.log(`[VIDEO CHANNEL] Successfully loaded: ${vClean}`))
+              .catch(e => console.warn(`[VIDEO_ERROR] Autostart blocked or File not found: ${vClean}`));
+          }
+        } else {
+          bgVideo.removeAttribute('src');
+          bgVideo.load();
+        }
+        localStorage.setItem(VIDEO_KEY, vClean);
+        updateScrollState();
+      }
+
+      function openModal() {
+        modal.classList.remove("hidden");
+        modal.setAttribute("aria-hidden", "false");
+        const currentTrack = localStorage.getItem(STORAGE_KEY) || "";
+        trackInput.value = currentTrack;
+
+        // Auto-suggest mapped video
+        let suggestedVideo = localStorage.getItem(VIDEO_KEY) || "";
+        try {
+          const mapping = JSON.parse(localStorage.getItem(MAPPING_KEY) || "{}");
+          if (mapping[currentTrack.toUpperCase()]) {
+            suggestedVideo = mapping[currentTrack.toUpperCase()];
+          }
+        } catch(e) {}
+
+        videoInput.value = suggestedVideo.replace('videos/', '');
+        setTimeout(() => trackInput.focus(), 0);
+      }
+
+      // Add auto-suggestion as you type track names
+      trackInput.addEventListener('input', () => {
+        try {
+          const mapping = JSON.parse(localStorage.getItem(MAPPING_KEY) || "{}");
+          const typed = trackInput.value.trim().toUpperCase();
+          if (mapping[typed]) {
+             videoInput.value = mapping[typed].replace('videos/', '');
+          }
+        } catch(e) {}
+      });
+
+      // --- HEADER VIEW TOGGLE (Track/Index) ---
+      const viewToggleBtn = document.getElementById('viewToggleBtn');
+      const trackHeader = document.getElementById('scrolling-track-container');
+      const sIndex = document.getElementById('system-index-container');
+      let currentView = localStorage.getItem('rkrbt_header_view') || 'video';
+
+      function updateHeaderView() {
+        if (currentView === 'video') {
+          trackHeader.classList.remove('hidden');
+          sIndex.classList.add('hidden');
+          viewToggleBtn.textContent = "[INDEX_VIEW]";
+        } else {
+          trackHeader.classList.add('hidden');
+          sIndex.classList.remove('hidden');
+          viewToggleBtn.textContent = "[TRACK_VIEW]";
+        }
+        localStorage.setItem('rkrbt_header_view', currentView);
+      }
+
+      viewToggleBtn?.addEventListener('click', () => {
+        currentView = (currentView === 'video') ? 'index' : 'video';
+        updateHeaderView();
+      });
+
+      updateHeaderView();
+
+      function closeModal() {
+        modal.classList.add("hidden");
+        modal.setAttribute("aria-hidden", "true");
+      }
+
+      setSessionData(localStorage.getItem(STORAGE_KEY), localStorage.getItem(VIDEO_KEY));
+
+      editBtn?.addEventListener("click", openModal);
+
+      applyBtn?.addEventListener("click", () => {
+        setSessionData(trackInput.value, videoInput.value);
+        closeModal();
+      });
+
+      cancelBtn?.addEventListener("click", closeModal);
+
+      modal?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          setSessionData(trackInput.value, videoInput.value);
+          closeModal();
+        }
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeModal();
+        }
+      });
+
+      modal?.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      const toggleLayoutBtn = document.getElementById("toggleLayoutBtn");
+      toggleLayoutBtn?.addEventListener("click", () => {
+        let current = localStorage.getItem('rkrbt_layout_override') || 'auto';
+        if (current === 'auto') {
+          current = 'tiktok';
+        } else if (current === 'tiktok') {
+          current = 'youtube';
+        } else {
+          current = 'auto'; // Revert back to config.json
+        }
+        localStorage.setItem('rkrbt_layout_override', current);
+        synchronizeState(); // Instantly apply change
+      });
+
+      const toggleAudioBtn = document.getElementById("toggleAudioBtn");
+      const audioStatusEl = document.getElementById("ui-audio-status");
+      if (audioStatusEl) {
+        let currentMode = localStorage.getItem('rkrbt_audio_mode') || 'MIX';
+
+        // Handle migration states
+        if (localStorage.getItem('rkrbt_force_default_audio') === 'true') {
+          currentMode = 'MIC';
+          localStorage.removeItem('rkrbt_force_default_audio');
+        }
+        if (currentMode === 'SYS') currentMode = 'MIC';
+        if (currentMode === 'VB' && !localStorage.getItem('rkrbt_migrated_mix')) {
+          currentMode = 'MIX'; // Old VB actually meant MIX
+          localStorage.setItem('rkrbt_migrated_mix', 'true');
+        }
+
+        localStorage.setItem('rkrbt_audio_mode', currentMode);
+        audioStatusEl.innerText = currentMode;
+      }
+
+      toggleAudioBtn?.addEventListener("click", () => {
+        let currentMode = localStorage.getItem('rkrbt_audio_mode') || 'MIX';
+
+        // State Machine: MIX -> VB (Music Only) -> MIC (Voice Only) -> MUTE (Silent) -> MIX
+        let nextMode = 'MIX';
+        if (currentMode === 'MIX') nextMode = 'VB';
+        if (currentMode === 'VB') nextMode = 'MIC';
+        if (currentMode === 'MIC') nextMode = 'MUTE';
+        if (currentMode === 'MUTE') nextMode = 'MIX';
+
+        localStorage.setItem('rkrbt_audio_mode', nextMode);
+        window.location.reload(); // Reload to grab new audio stream
+      });
+
+      const audioSetupBtn = document.getElementById("audioSetupBtn");
+      const audioHelpModal = document.getElementById("audioHelpModal");
+      const audioHelpCloseBtn = document.getElementById("audioHelpCloseBtn");
+
+      audioSetupBtn?.addEventListener("click", () => {
+        audioHelpModal.classList.remove("hidden");
+        audioHelpModal.setAttribute("aria-hidden", "false");
+      });
+
+      function closeAudioHelp() {
+        audioHelpModal.classList.add("hidden");
+        audioHelpModal.setAttribute("aria-hidden", "true");
+      }
+
+      audioHelpCloseBtn?.addEventListener("click", closeAudioHelp);
+
+      const toggleVizBtn = document.getElementById("toggleVizBtn");
+      toggleVizBtn?.addEventListener("click", () => {
+        const modes = ['BARS', 'BLOCKS', 'OSCILLOSCOPE'];
+        let currentIndex = modes.indexOf(vizMode);
+        vizMode = modes[(currentIndex + 1) % modes.length];
+        
+        localStorage.setItem('rkrbt_viz_mode', vizMode);
+        if (uiVizStatus) uiVizStatus.innerText = vizMode;
+      });
+
+    })();
+  </script>
+</body>
+
+</html>
