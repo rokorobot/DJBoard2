@@ -10,35 +10,31 @@ A high-performance, cinematic live-performance dashboard designed for real-time 
 ## 🛰️ TACTICAL FEATURES
 
 ### 📡 V-FEED // TACTICAL_RECON
-- **Zero-Type Logic:** Automatically detects and appends `.mp4` to track names.
-- **Dynamic Playback:** Integrated high-fidelity video replay synced directly to the session track.
-- **Integrated Fallback:** Automatic switch to an **Image Sequencer** (Recon Frames) if video assets are missing.
-- **Horizon Sync Calibration:** A massive 460px vertical surveillance frame aligned with the analysis floor.
+- **Dynamic Image Recon (Auto-Scan):** Integrated server-side scanning that automatically detects and builds the frame library on startup/refresh.
+- **Master Sequencer Override:** Tactical **[STOP/GO]** toggle for manual control of the image reconnaissance carousel.
+- **Temporal Sequencer:** Manual interval control (**0.1s - 10.0s**) for fixed-rhythm reconnaissance cycles.
+- **Real-Time HUD:** Top-right telemetry readout tracking the live count of active tactical assets (e.g., `FRAME: XX/17`).
+- **Integrated Fallback:** Automatic switch to a randomized **17-Frame Sequencer** if video assets are missing.
 
 ### 📊 HORIZON_SYNC ANALYSIS
 - **Symmetrical Monitoring:** A 50/50 dashboard split ensuring total horizontal and vertical balance across the UI.
 - **Consolidated Telemetry Hub:** Vertical stack for **Signal Routing (PGE)**, **Analysis Sensitivity**, and **Session Tracking**.
 - **Beat-Synced Spectrometry:** Responsive L/R Directional recon bars with gain-adjustable sensitivity.
 
-### 📜 HEADER_MARQUEE // DUAL_VIEW
-- **Primary View:** Large-scale scrolling track marquee for maximal visibility.
-- **Secondary View:** Instant toggle to the **System Index [INDEX_VIEW]** for audio/visual setup.
-- **Interactive Controls:** Toggle scroll speed and active track data on-the-fly.
-
 ---
 
 ## 🛠️ DEPLOYMENT & RECON ASSETS
 
-### **1. Video Assets (`live/videos/`)**
-Place all high-fidelity `.mp4` files here. 
-- **Naming Rule:** File names must match the track names exactly (e.g., `Spheral Hell.mp4`).
-- **Support:** The engine automatically handles spaces and special characters.
+### **1. Integrated Tactical Server**
+To power up the engine with **Dynamic Recon** active, initiate the smart server:
+```bash
+node live/server.js
+```
+The dashboard will be active at: **`http://localhost:8080/`**
 
 ### **2. Recon Frames (`live/frames/`)**
-Place signal-feed sequences (`frame1.png`, `frame2.png`, etc.) here for the fallback visualizer.
-
-### **3. Session Initialization**
-Access the **[INDEX_VIEW]** or use the **[EDIT TRACK]** button to establish your active session path.
+Place signal-feed sequences here. The integrated server will automatically audit this folder and update the system library on every load.
+- **Supported Formats:** `.png`, `.jpeg`, `.jpg`, `.gif`, `.webp`.
 
 ---
 
@@ -50,4 +46,4 @@ Access the **[INDEX_VIEW]** or use the **[EDIT TRACK]** button to establish your
 ---
 
 ### // SECURE_ACCESS // DATA_ARCHIVES_LINKED
-> **ROKOROBO INDUSTRIAL CORE [VER_SYNC: 24:B]**
+> **ROKOROBO INDUSTRIAL CORE [VER_SYNC: 24:C]**
